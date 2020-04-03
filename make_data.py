@@ -3,7 +3,10 @@ import sys
 import os
 import math
 
+#creates text files containing the sequence information for training and test set
+
 def main():
+    #load files
     pos = os.path.join('data', 'pos_train.bed')
     neg = os.path.join('data', 'neg_train.bed')
     test = os.path.join('data', 'true_test.bed')
@@ -12,6 +15,7 @@ def main():
     out3 = os.path.join('data', 'test.txt')
     genome = os.path.join('data', 'hg38.fa')
     i = 0
+    # set parameters which settings should be used for creating the file
     adjacency_flag = True
     padding =  2  # 0: pre, 1: post, 2:middle
     seq_len = 1000
@@ -25,14 +29,16 @@ def main():
 
 
 def bed_to_fasta(bed_file, fasta_file, genome_fasta, label, counter, adjacency_flag, padding, seq_len, adj_len):
+    # the main method to create the sequence files
     bed = open(bed_file, 'r');
 
     output = open(fasta_file, 'w');
     genome_fa = pysam.FastaFile(genome_fasta)
 
+	# if adjacent nucleotides should be used
     if adjacency_flag:
         for line in bed:
-
+			# get the location information about the sequences and fetch it
             values = line.split()
 
             chr_n = values[0]
@@ -43,6 +49,7 @@ def bed_to_fasta(bed_file, fasta_file, genome_fasta, label, counter, adjacency_f
 
             seq = seq.upper()
 
+			# set label and set information
             if label == 'test':
                 if values[4].startswith('hsa'):
                     label1 = '1'
@@ -56,9 +63,11 @@ def bed_to_fasta(bed_file, fasta_file, genome_fasta, label, counter, adjacency_f
                 else:
                     label1 = '0'
 
+			# reverse complement the sequence if necessary
             if strand == '-':
                 seq = reverse_complement(seq)
 
+			# Use appropriate padding technique and add/remove nucleotides
             # 0: pre, 1: post, 2:middle
             if padding == 0:
 
@@ -91,9 +100,11 @@ def bed_to_fasta(bed_file, fasta_file, genome_fasta, label, counter, adjacency_f
                 print('error')
                 sys.exit()
 
+			# write output line
             output.write('>' + '|'.join([str(counter), label1, set_var]) + '\n')
             output.write(seq + '\n')
             counter += 1
+	# similar procedure if no adjacent nucleotides should be used
     else:
         for line in bed:
 
@@ -163,12 +174,14 @@ def bed_to_fasta(bed_file, fasta_file, genome_fasta, label, counter, adjacency_f
 
 
 def reverse_complement(seq):
+    # reverse complement a given sequence
     seq = list(seq)
     seq.reverse()
     return ''.join(complement(seq))
 
 
 def complement(seq):
+    # definition of the complement nucleotides
     complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N': 'N'}
     complseq = [complement[base] for base in seq]
     return complseq

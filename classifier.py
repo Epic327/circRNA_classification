@@ -23,18 +23,21 @@ def main(arguments):
 
     in_len = arguments.in_len
 	
+	# create the sequence and label list
     print('Make x,y file')
     train = 'train.txt'
     x_train, y_train = make_x_y(train)
     print('Start Training')
     train_net(x_train, y_train, name, in_len)
 
+	# get sequence and label information for testing
     print('Make x,y file')
     test = 'test.txt'
     x_test, y_test = make_x_y(test)
     x_test = np.array(x_test)
     y_test = np.array(y_test)
     print('Evaluate')
+	# load trained model
     json_file = open(name + '.json', 'r')
     loaded_model_json = json_file.read()
     json_file.close()
@@ -43,6 +46,7 @@ def main(arguments):
     loaded_model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy', f1_m, matthews_correlation])
     loaded_model.summary()
 	
+	# make predictions
     predictions = np.argmax(loaded_model.predict(x_test),axis=1)
     correct = 0
     y_list = list()
@@ -52,10 +56,11 @@ def main(arguments):
         elif y[0] == 1.:
             y = 0
         else:
-            print('a')
+            print('error')
         if pred == y:
             correct += 1
         y_list.append(y)
+	# start evaluation using the metrics accuracy, f1, mcc and specificity
     tn, fp, fn, tp = confusion_matrix(y_list, predictions).ravel()
     acc = (tp+tn)/(tp+tn+fp+fn)
     prec = (tp)/(tp+fp)
@@ -68,6 +73,7 @@ def main(arguments):
     print('MCC = %f' % (mcc))
     print('Specificity = %f' % (spec))
 	
+	# save results
     with open(name + '.txt', 'w') as f:
         f.write('Accuracy = %f\n' % (acc))
         f.write('F1 = %f\n' % (f1))        
@@ -76,6 +82,7 @@ def main(arguments):
 
 
 def make_x_y(path):
+	# returns the sequence (in one-hot encoding) and label list
     x = list()
     y = list()
     with open(path, 'r') as f:
@@ -93,6 +100,7 @@ def make_x_y(path):
 
 
 def make_one_hot(seq):
+	# creates a one hot encoding for a sequence
     result = list()
     for nt in seq:
         if nt == 'A':
@@ -119,16 +127,19 @@ def make_one_hot(seq):
 
 
 def train_net(x_train, y_train, name, max_len):
+	#definition of network architecture and training procedure
 
     x_train = np.array(x_train)
     y_train = np.array(y_train)
 	
+	# define architecture for autoencoder
     input_shape = Input(shape=(max_len, 5))
 
     autoencoder = Model(input_shape, decoder(encoder(input_shape)))
     autoencoder.compile(optimizer='rmsprop', loss='mean_squared_error')
     print(autoencoder.summary())
 	
+	# define training procedure for autoencoder
     earlyStopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='min')
     mcp_save = ModelCheckpoint(name + '_ae.h5', save_best_only=True, monitor='val_loss', mode='min', save_weights_only=True, verbose=1)
     reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=7, verbose=1, epsilon=1e-4, mode='min')
@@ -140,22 +151,25 @@ def train_net(x_train, y_train, name, max_len):
                     callbacks=[mcp_save, reduce_lr_loss, earlyStopping],
                     shuffle=True)
 
+	# save autoencoder
     autoencoder_json = autoencoder.to_json()
     with open(name + '_ae.json', 'w') as json_file:
         json_file.write(autoencoder_json)
 	
+	# define classifier
     final_model = Model(input_shape, classifier(encoder(input_shape)))
 	
+	# get encoder weights
     for l1,l2 in zip(final_model.layers[0:5],autoencoder.layers[0:5]):
         l1.set_weights(l2.get_weights())
 		
-	
     for layer in final_model.layers[0:5]:
         layer.trainable = True
 	
     final_model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])
     print(final_model.summary())
 	
+	# define training procedure for final model
     earlyStopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='min')
     mcp_save = ModelCheckpoint(name + '.h5', save_best_only=True, monitor='val_loss', mode='min', save_weights_only=True, verbose=1)
     reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=7, verbose=1, epsilon=1e-4, mode='min')
@@ -173,7 +187,8 @@ def train_net(x_train, y_train, name, max_len):
         json_file.write(final_model_json)
 	
 def encoder(input_seq):
-    
+    # encoder architecture
+	
     x = Conv1D(filters=128, kernel_size=12, strides=1, padding='same', activation='relu')(input_seq)
     x = MaxPooling1D(2)(x)
     x = Conv1D(filters=128, kernel_size=6, strides=1, padding='same', activation='relu')(x)
@@ -181,6 +196,8 @@ def encoder(input_seq):
     return encoded
 
 def decoder(encoded_seq):
+	# decoder architecture
+	
     x = Conv1D(filters=128, kernel_size=6, activation='relu', padding='same')(encoded_seq)
     x = UpSampling1D(2)(x)
     x = Conv1D(filters=128, kernel_size=12, activation='relu', padding='same')(x)
@@ -189,6 +206,8 @@ def decoder(encoded_seq):
     return decoded
 	
 def classifier(encoded_seq):
+	# classifier architecture
+
     x = Conv1D(filters=64, kernel_size=3, strides=1, padding='valid', activation='relu')(encoded_seq)
     x = Conv1D(filters=32, kernel_size=3, strides=1, padding='valid', activation='relu')(x)
     x = Dropout(0.5)(x)
@@ -237,6 +256,7 @@ def matthews_correlation(y_true, y_pred):
 
 
 def parse_arguments(parser):
+	# defintion of arguments
     parser.add_argument('--name', type=str,
                         help='Name of the network. Will be used as the filename to save results', required=True)
 
@@ -249,7 +269,7 @@ def parse_arguments(parser):
 
 if __name__ == '__main__':
 
-    #python ae.py --name y --in_len 200 
+    #python classifier.py --name y --in_len 200 
 
     parser = argparse.ArgumentParser(
         description='circular RNA classification from other long non-coding RNA using deep learning')

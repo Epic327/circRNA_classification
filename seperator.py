@@ -1,6 +1,9 @@
 import sys
 import random
 
+#loads the positive and negative dataset and splits it into test and training set
+
+#load data files
 data = list()
 with open('data/circRNA_dataset.bed', 'r') as f:
     for line in f:
@@ -10,12 +13,14 @@ with open('data/negative_dataset.bed', 'r') as f:
     for line in f:
         data.append([line, 'neg'])
 
+#shuffle and split files
 random.shuffle(data)
 length = len(data)
 train_val_ind = int(length * 0.85)
 train_val_data = data[:train_val_ind]
 test_data = data[train_val_ind:]
 
+#open result files and write their content
 pos_train = open('data/pos_train.bed', 'w+')
 neg_train = open('data/neg_train.bed', 'w+')
 

@@ -1,6 +1,8 @@
 import random
 import os
 
+# combine positive and negative training file into one
+
 def main():
 	neg = open(os.path.join('data', 'neg_train.txt'), 'r')
 	pos = open(os.path.join('data', 'pos_train.txt'), 'r')
@@ -9,6 +11,7 @@ def main():
 	labels = list()
 	sequence = list()
 
+	# extract the information
 	for line in neg:
 		if line.startswith('>'):
 			labels.append(line)
@@ -24,6 +27,7 @@ def main():
 	neg.close()
 	pos.close()
 
+	# combine sequence and label information in one list
 	pairs = list()
 
 	for label, seq in zip(labels, sequence):
@@ -31,6 +35,7 @@ def main():
 
 	random.shuffle(pairs)
 
+	# save the information
 	for elem in pairs:
 		complete.write(elem[0])
 		complete.write(elem[1])
