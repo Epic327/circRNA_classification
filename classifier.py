@@ -212,7 +212,7 @@ def classifier(encoded_seq):
     x = Conv1D(filters=32, kernel_size=3, strides=1, padding='valid', activation='relu')(x)
     x = Dropout(0.5)(x)
     x = MaxPooling1D(pool_size=2, strides=2)(x)
-    #x = Dropout(0.5)(x)
+    x = Dropout(0.5)(x)
     x = Flatten()(x)
     out = Dense(2, activation='softmax')(x)
     return out
