@@ -36,6 +36,9 @@ In order to recreate the results simply run the following command:
 python classifier.py --name y --in_len 200
 ```
 
+Additionally if you want to run the different experimental setups, as they can be found in the data folder, simply copy the files of the respective folder and paste them into the 'circRNA_classification' folder (The folder which contains classifier.py). 
+Lastly if you do not wish to train the model but simply want to reproduce the results, just copy the files from one of the experimental setups (found in the 'data') folder and paste them into the 'circRNA_classification' folder. Furthermore comment line 31 in classifier.py ('train_net(x_train, y_train, name, in_len)'). Now the code will not train a model but simply load the model and weights from the files in the 'circRNA_classification' folder and perform evaluation based on them.
+
 If you wish to recreate the ground truth files yourself, first run these commands:
 
 ```
